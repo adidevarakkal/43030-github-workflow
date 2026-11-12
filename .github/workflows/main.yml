@@ -1,0 +1,39 @@
+name: Update HTML and README
+
+# Step 1: run on every push to main
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: only the matching team member's push updates index.html
+      - name: Update index.html (Team Leader)
+        if: github.actor == 'adidevarakkal'
+        run: |
+          sed -i '/<\/body>/i <p>Updated by Team Leader on '"$(date)"'</p>' index.html
+
+      # Step 3: log the update in README.md
+      - name: Update README
+        run: |
+          echo "### Updated by ${{ github.actor }} on $(date '+%Y-%m-%d %H:%M:%S') [Commit: $(git rev-parse --short HEAD)]" >> README.md
+
+      # Step 4: commit changes to index.html and README
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Workflow: Updated HTML and README for ${{ github.actor }}" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
